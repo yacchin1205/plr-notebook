@@ -15,20 +15,19 @@ RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh; sdk install groovy"
 USER root
 COPY . /tmp
 
-## PLR binary files
-#RUN cp -fr /tmp/plr /opt/ && \
-#    chmod +x /opt/plr/bin/plr && \
-#    mkdir /home/$NB_USER/.groovy && \
-#    cp -fr /opt/plr/lib /home/$NB_USER/.groovy/ && \
-#    chown $NB_USER -R /home/$NB_USER/.groovy
-# ENV PATH=$PATH:/opt/plr/bin
-
 # PLRFS scripts
 RUN mkdir /opt/plrfs && cp -fr /tmp/* /opt/plrfs/ && \
     chmod +x /opt/plrfs/groovy/*.sh && \
     pip install --no-cache-dir /opt/plrfs/
 
-COPY conf /tmp/conf
+## PLR binary files
+RUN unzip /opt/plrfs/archive/plr.zip -d /tmp && \
+    mv /tmp/plr/* /opt/plrfs/ && \
+    chmod +x /opt/plrfs/bin/plr
+#    mkdir /home/$NB_USER/.groovy && \
+#    cp -fr /opt/plr/lib /home/$NB_USER/.groovy/ && \
+#    chown $NB_USER -R /home/$NB_USER/.groovy
+ENV PATH=$PATH:/opt/plrfs/bin
 
 # Scripts for Supervisor
 RUN mkdir -p /usr/local/bin/before-notebook.d && \
