@@ -8,11 +8,10 @@ RUN apt-get update && \
 ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
 RUN pip install --no-cache-dir pyfuse3 pexpect
 
-USER $NB_USER
+ENV SDKMAN_DIR=/opt/sdkman
 RUN curl -s "https://get.sdkman.io" | bash
-RUN bash -c "source $HOME/.sdkman/bin/sdkman-init.sh; sdk install groovy"
+RUN bash -c "source ${SDKMAN_DIR}/bin/sdkman-init.sh; sdk install groovy"
 
-USER root
 COPY . /tmp
 
 # PLRFS scripts
