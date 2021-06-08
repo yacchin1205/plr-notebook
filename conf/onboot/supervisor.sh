@@ -4,7 +4,7 @@ set -xe
 
 cp -fr /opt/plrfs/notebooks /tmp/PLR
 chown ${NB_USER}:users -R /tmp/PLR
-cp -fr --preserve /tmp/PLR /home/${NB_USER}/
+cp -fr --no-clobber --preserve /tmp/PLR/* /home/${NB_USER}/
 
 supervisord -c /opt/supervisor/supervisor.conf
 
