@@ -84,9 +84,11 @@ class MyChannel extends BaseChannel {
 }
 
 class FriendToMeChannel extends BaseChannel {
+    def friend = null
     def channel = null
 
-    def FriendToMeChannel(channel) {
+    def FriendToMeChannel(friend, channel) {
+        this.friend = friend
         this.channel = channel
     }
 
@@ -96,7 +98,7 @@ class FriendToMeChannel extends BaseChannel {
 
     def getName() {
         this.channel.syncAndWait()
-        return this.channel.getDefaultName()
+        return "${this.channel.getDefaultName()}(from ${this.friend.getPlrId()})"
     }
 
     def getTimelineItems(beginDate, endDate) {
@@ -182,7 +184,7 @@ class PLRUtil {
             def f2meRoot = friend.getFriendToMeRoot()
             f2meRoot.syncAndWait()
             for (def channel in f2meRoot.listReferencingChannels()) {
-                channels.add(new FriendToMeChannel(channel))
+                channels.add(new FriendToMeChannel(friend, channel))
             }
         }
         return channels
