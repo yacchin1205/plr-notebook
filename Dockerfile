@@ -6,7 +6,10 @@ RUN apt-get update && \
             curl zip rabbitmq-server supervisor && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
-RUN pip install --no-cache-dir pyfuse3 pexpect
+RUN apt-get update && \
+    apt-get install -y build-essential && \
+    pip install --no-cache-dir pyfuse3 pexpect && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ENV SDKMAN_DIR=/opt/sdkman
 RUN curl -s "https://get.sdkman.io" | bash
