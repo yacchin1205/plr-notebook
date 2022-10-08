@@ -1,6 +1,6 @@
 @Grapes([
-	@Grab(group='com.rabbitmq', module='amqp-client', version='3.6.6'),
 	@Grab(group='org.ehcache', module='ehcache', version='3.9.2'),
+	@Grab(group='org.zeromq', module='jeromq', version='0.5.2'),
 ])
 import groovy.json.JsonSlurper
 import groovy.json.JsonOutput
@@ -10,17 +10,11 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.logging.Level
 import java.util.logging.Logger
-import com.rabbitmq.client.*
 import org.ehcache.Cache
 import org.ehcache.CacheManager
 import static org.ehcache.config.builders.CacheConfigurationBuilder.newCacheConfigurationBuilder
 import static org.ehcache.config.builders.CacheManagerBuilder.newCacheManagerBuilder
 import static org.ehcache.config.builders.ResourcePoolsBuilder.heap
-
-def createRabbitMQConnection() {
-    def factory = new ConnectionFactory()
-    return factory.newConnection()
-}
 
 class ChannelFolder {
 		String kind = "folder"
@@ -189,17 +183,6 @@ def logger = Logger.getLogger(scriptLocation.toString())
 
 def plrutil = evaluate(scriptLocation.getParent().resolve("plrutil.groovy").toFile())
 
-logger.info "Initializing connection to services..."
-
-def conn = createRabbitMQConnection()
-def channel = conn.createChannel()
-boolean durable = false
-channel.queueDeclare("plrfsrpc", durable, false, false, null)
-
-boolean noAck = false
-def consumer = new QueueingConsumer(channel)
-channel.basicConsume("plrfsrpc", noAck, consumer)
-
 plrutil.init()
 
 def jsonSlurper = new JsonSlurper()
@@ -218,23 +201,20 @@ CacheManager cacheManager = newCacheManagerBuilder()
     .withCache("PLRobjects", newCacheConfigurationBuilder(String.class, Object.class, heap(cacheHeapSize)))
     .build(true)
 
-while(running) {
-  QueueingConsumer.Delivery delivery
-  try {
-      delivery = consumer.nextDelivery();
-			def callerProps = delivery.getProperties()
-      def event = jsonSlurper.parseText(new String(delivery.body, StandardCharsets.UTF_8))
-      def result = performRPC(logger, cacheManager, plrutil, event)
-			def resultBytes = JsonOutput.toJson(result).getBytes('UTF8')
-			BasicProperties props = new AMQP.BasicProperties.Builder()
-			                            .correlationId(callerProps.getCorrelationId())
-			                            .build()
-			channel.basicPublish("", callerProps.getReplyTo(), props, resultBytes);
-  } catch (InterruptedException ie) {
-      logger.info ie.getMessage()
-      running = false
-  }
-  channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
+def portNumber = System.getenv("PLR_ZEROMQ_PORT") ?: "5555"
+
+try (def zcontext = new ZContext()) {
+	// Socket to talk to clients
+	def socket = zcontext.createSocket(ZMQ.REP);
+	socket.bind("tcp://*:" + portNumber);
+
+	while (!Thread.currentThread().isInterrupted()) {
+		def message = socket.recv(0);
+	    def event = jsonSlurper.parseText(new String(message, StandardCharsets.UTF_8))
+	    def result = performRPC(logger, cacheManager, plrutil, event)
+		def resultBytes = JsonOutput.toJson(result).getBytes(StandardCharsets.UTF_8)
+		socket.send(resultBytes, 0);
+	}
 }
 
 logger.info "Exiting... "
