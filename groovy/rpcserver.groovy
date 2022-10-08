@@ -15,6 +15,8 @@ import org.ehcache.CacheManager
 import static org.ehcache.config.builders.CacheConfigurationBuilder.newCacheConfigurationBuilder
 import static org.ehcache.config.builders.CacheManagerBuilder.newCacheManagerBuilder
 import static org.ehcache.config.builders.ResourcePoolsBuilder.heap
+import org.zeromq.ZMQ
+import org.zeromq.ZContext
 
 class ChannelFolder {
 		String kind = "folder"
