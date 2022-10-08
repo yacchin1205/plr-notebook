@@ -2,3 +2,5 @@ plr/
 __pycache__
 *.pyc
 archive/plr.zip
+archive/osscon
+.DS_Store

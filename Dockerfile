@@ -38,5 +38,12 @@ RUN mkdir -p /usr/local/bin/before-notebook.d && \
     cp -fr /tmp/conf/supervisor /opt/
 RUN chown $NB_USER -R /tmp/notebooks
 
+# Boot scripts to perform /usr/local/bin/before-notebook.d/* on JupyterHub
+RUN mkdir -p /opt/plr-notebook/original/bin/ && \
+    mv /opt/conda/bin/jupyterhub-singleuser /opt/plr-notebook/original/bin/jupyterhub-singleuser && \
+    mv /opt/conda/bin/jupyter-notebook /opt/plr-notebook/original/bin/jupyter-notebook && \
+    cp /tmp/conf/bin/* /opt/conda/bin/ && \
+    chmod +x /opt/conda/bin/jupyterhub-singleuser /opt/conda/bin/jupyter-notebook
+
 USER $NB_USER
 RUN cp /tmp/notebooks/* .

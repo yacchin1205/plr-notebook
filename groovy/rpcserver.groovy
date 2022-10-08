@@ -208,8 +208,14 @@ def plrId = plrutil.getMyPlrId()
 logger.info "PLR started: ${plrId}"
 def running = true
 
+def cacheHeapSizeText = System.getenv("PLR_CACHE_HEAP_SIZE");
+def cacheHeapSize = 1024L * 1024; // Default: 1MB
+if (cacheHeapSizeText != null && cacheHeapSizeText != "") {
+	cacheHeapSize = Long.valueOf(cacheHeapSizeText);
+}
+
 CacheManager cacheManager = newCacheManagerBuilder()
-    .withCache("PLRobjects", newCacheConfigurationBuilder(String.class, Object.class, heap(1024L * 100)))
+    .withCache("PLRobjects", newCacheConfigurationBuilder(String.class, Object.class, heap(cacheHeapSize)))
     .build(true)
 
 while(running) {
