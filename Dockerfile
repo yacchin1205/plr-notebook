@@ -1,11 +1,25 @@
-FROM jupyter/scipy-notebook
+FROM quay.io/jupyter/scipy-notebook:latest
 
 USER root
 RUN apt-get update && \
-    apt-get install -y openjdk-8-jre pkg-config fuse3 libfuse3-dev \
+    apt-get install -y openjdk-17-jre pkg-config fuse3 libfuse3-dev \
             curl zip rabbitmq-server supervisor gnupg apt-transport-https && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-ENV JAVA_HOME=/usr/lib/jvm/java-1.8.0-openjdk-amd64/
+ENV JAVA_HOME=/usr/lib/jvm/java-1.17.0-openjdk-amd64/
+
+# Jenkins, Tinyproxy and Supervisor
+RUN apt-get update && apt-get install -yq supervisor tinyproxy gnupg curl ca-certificates \
+    && sh -c 'wget -q -O - https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+       /usr/share/keyrings/jenkins-keyring.asc > /dev/null' \
+    && sh -c 'echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/ > \
+       /etc/apt/sources.list.d/jenkins.list' \
+    && apt-get update && apt-get install -yq openjdk-11-jdk jenkins \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Server Proxy and papermill
+RUN pip --no-cache-dir install jupyter-server-proxy papermill && \
+    jupyter server extension enable --sys-prefix jupyter_server_proxy
+
 RUN apt-get update && \
     apt-get install -y build-essential && \
     pip install --no-cache-dir pyfuse3 pexpect && \
@@ -52,6 +66,9 @@ RUN mkdir -p /opt/plr-notebook/original/bin/ && \
     mv /opt/conda/bin/jupyter-notebook /opt/plr-notebook/original/bin/jupyter-notebook && \
     cp /tmp/conf/bin/* /opt/conda/bin/ && \
     chmod +x /opt/conda/bin/jupyterhub-singleuser /opt/conda/bin/jupyter-notebook
+
+# Configuration for Server Proxy
+RUN cat /tmp/conf/jupyter_notebook_config.py >> $CONDA_DIR/etc/jupyter/jupyter_notebook_config.py
 
 USER $NB_USER
 RUN cp /tmp/notebooks/* .
