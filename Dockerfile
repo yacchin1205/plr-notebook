@@ -7,9 +7,7 @@ RUN mkdir -p /tmp/lib /tmp/bin && \
     unzip /tmp/archive/plrDart.zip -d /tmp/lib && \
     # Remove flutter-related dependencies from plrDart's pubspec.yaml
     # because we are not using Flutter in this Docker image
-    grep -v plr_ui /tmp/lib/plrDart/pubspec.yaml > /tmp/lib/plrDart/pubspec.yaml.override1 && \
-    grep -v plr_flutter /tmp/lib/plrDart/pubspec.yaml.override1 > /tmp/lib/plrDart/pubspec.yaml.override2 && \
-    cp /tmp/lib/plrDart/pubspec.yaml.override2 /tmp/lib/plrDart/pubspec.yaml && \
+    sed -i '/plr_ui/d;/plr_flutter/d' /tmp/lib/plrDart/pubspec.yaml && \
     cd /tmp/lib/plrDart/_plr_common && \
     dart pub get && \
     dart run build_runner build --delete-conflicting-outputs && \
