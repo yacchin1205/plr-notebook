@@ -5,14 +5,23 @@ COPY . /tmp
 # Build the PLR command-line tool
 RUN mkdir -p /tmp/lib /tmp/bin && \
     unzip /tmp/archive/plrDart.zip -d /tmp/lib && \
+    # Remove flutter-related dependencies from plrDart's pubspec.yaml
+    # because we are not using Flutter in this Docker image
+    grep -v plr_ui /tmp/lib/plrDart/pubspec.yaml > /tmp/lib/plrDart/pubspec.yaml.override1 && \
+    grep -v plr_flutter /tmp/lib/plrDart/pubspec.yaml.override1 > /tmp/lib/plrDart/pubspec.yaml.override2 && \
+    cp /tmp/lib/plrDart/pubspec.yaml.override2 /tmp/lib/plrDart/pubspec.yaml && \
+    cd /tmp/lib/plrDart/_plr_common && \
+    dart pub get && \
+    dart run build_runner build --delete-conflicting-outputs && \
     cd /tmp/lib/plrDart/plr_command && \
     dart pub get && \
     dart compile exe bin/plr.dart -o /tmp/bin/plr
 
 # Build the PLR RPC server
-RUN cd /tmp/ && \
+RUN mv /tmp/dart/plrget /tmp/lib/plrDart/ && \
+    cd /tmp/lib/plrDart/plrget && \
     dart pub get && \
-    dart compile exe dart/plrget.dart -o /tmp/bin/plrget
+    dart compile exe plrget.dart -o /tmp/bin/plrget
 
 FROM quay.io/jupyter/scipy-notebook
 
